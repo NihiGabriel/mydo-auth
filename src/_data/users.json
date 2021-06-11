@@ -1,0 +1,14 @@
+[
+    {
+        "_id": "602c356356ac0d3a84b5056f",
+        "firstName": "Super",
+        "lastName": "Administrator",
+        "email": "urielaweobe@gmail.com",
+        "password": "Movement10...",
+        "isActivated": "true",
+        "isActive": "true",
+        "isAdmin": "true",
+        "superUser": "true",
+        "roles": ["602c357556ac0d3a84b5056f"]
+    }
+]
