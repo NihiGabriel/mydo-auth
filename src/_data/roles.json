@@ -1,0 +1,21 @@
+[
+    {
+        "_id": "602c357556ac0d3a84b5056f",
+        "name": "superadmin",
+        "description": "superadmin has all previledges in the system",
+        "slug": "super-admin",
+        "users": ["602c356356ac0d3a84b5056f"]
+    },
+
+    {
+        "name": "admin",
+        "description": "admin has limited previledges in the system",
+        "slug": "admin"
+    },
+
+    {
+        "name": "user",
+        "description": "user has limited previledges in the system",
+        "slug": "user"
+    }
+]
