@@ -93,6 +93,7 @@ const UserSchema = new mongoose.Schema(
 
 UserSchema.set('toJSON', {getters: true, virtuals: true});
 
+<<<<<<< HEAD
 UserSchema.pre('save', async function(next){
 
     if(!this.isModified('password')){
@@ -154,6 +155,8 @@ UserSchema.methods.hasRole = (role, roles) => {
     return flag;
   };
 
+=======
+>>>>>>> 8f3118e9d9bf6609c8436d35adb04918470a73b8
 UserSchema.methods.findByEmail= async (email) => {
     return await this.findOne({ email: email });
 };
