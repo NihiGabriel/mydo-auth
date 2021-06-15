@@ -50,7 +50,8 @@ exports.register = asyncHandler(async (req, res, next)=> {
         // todo: send welcome and activation email
 
         const u = await User.findById(user._id).populate([{
-            path: 'roles'
+            path: 'roles',
+            select: '_id name'
         }]);
 
         res.status(200).json({
@@ -110,7 +111,7 @@ const sendTokenResponse = async (user, message, statusCode, res) => {
 
     const u = await User.findById(user._id);
 
-    res.status(statusCode).cookie('token', token, options).json({
+    res.status(statusCode).cookie('token', token, options).json({ // 'token', the name of the cookie you want to save
         error: false,
         errors: [],
         token: token,

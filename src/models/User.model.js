@@ -70,11 +70,11 @@ const UserSchema = new mongoose.Schema(
             }
         ],
 
-        country: {
+        country:[ {
             type: mongoose.Schema.ObjectId,
             ref: 'Country'
         }
-
+    ]
 
     },
 
@@ -93,36 +93,36 @@ const UserSchema = new mongoose.Schema(
 
 UserSchema.set('toJSON', {getters: true, virtuals: true});
 
-<<<<<<< HEAD
-UserSchema.pre('save', async function(next){
+// these are the codes to encode with JWT below
+UserSchema.pre('save', async function(next){ // save means is either you're creating a new record or updating an existing data
 
     if(!this.isModified('password')){
-        return next();
+        return next(); // proceed to the next request
     }
     
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    const salt = await bcrypt.genSalt(10); // this is used to generate 10 random numbers. this numbers will be added to the password the user entered and bcrypt will hash both together
+    this.password = await bcrypt.hash(this.password, salt); // bcrypt and crypto is used to hash password
 })
 
 UserSchema.methods.getSignedJwtToken = function () {
     return jwt.sign(
-        { id: this._id, email: this.email, roles: this.roles}, 
+        { id: this._id, email: this.email, roles: this.roles}, // encode the id of the user which we are accesssing in our auth middleware(pass in the payload i.e everything you want to encode and pass in the secret and expire)
         process.env.JWT_SECRET, 
         { expiresIn: process.env.JWT_EXPIRE }
     )
 }
 
-UserSchema.methods.matchPassword = async function (pass) {
+UserSchema.methods.matchPassword = async function (pass) { //compares password by hashing   
     return await bcrypt.compare(pass, this.password)
 }
 
 // generate reset password token
 UserSchema.methods.getResetPasswordToken = function () {
 
-    const resetToken = crypto.randomBytes(20).toString('hex')
+    const resetToken = crypto.randomBytes(20).toString('hex') // hex will make it an hexadecimal string
 
     // hash the token generated
-    this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+    this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex') // sha256 is an embedded algorithm in d crypto library
 
     // set the expiry time/date
     this.getResetPasswordTokenExpire = Date.now() + 10 * 60 * 1000 // 10 minutes
@@ -155,8 +155,6 @@ UserSchema.methods.hasRole = (role, roles) => {
     return flag;
   };
 
-=======
->>>>>>> 8f3118e9d9bf6609c8436d35adb04918470a73b8
 UserSchema.methods.findByEmail= async (email) => {
     return await this.findOne({ email: email });
 };

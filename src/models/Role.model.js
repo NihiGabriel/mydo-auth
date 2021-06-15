@@ -44,16 +44,16 @@ RoleSchema.pre('save', function(next) {
     next();
 });
 
-RoleSchema.statics.getAllRoles = () => {
+RoleSchema.statics.getAllRoles = function (){
     return this.findOne({});
 }
 
-RoleSchema.statics.findByName = async(name) => {
+RoleSchema.statics.findByName = async function(name){
     return await this.findOne({ name: name });
 }
 
-RoleSchema.methods.getRoleName = async(id) => {
-    return this.name;
+RoleSchema.methods.getRoleName = async function(){
+    return this.name({});
 }
-
-module.exports = mongoose.model('roles', RoleSchema)
+ 
+module.exports = mongoose.model('Role', RoleSchema)

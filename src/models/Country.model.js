@@ -53,7 +53,7 @@ const CountrySchema = new mongoose.Schema(
             required: [false, 'flag is required']
         },
 
-        state: [],
+        states: [],
 
         slug: String
 
