@@ -10,7 +10,7 @@ const expressSanitize = require('express-mongo-sanitize');
 const helmet = require('helmet');
 const bodyParser = require('body-parser');
 const xss = require('xss-clean');
-const expressRateLimit = require('express-rate-limit');
+const { limitRequest } = require('../middleware/rateLimiter.mw');
 const hpp = require('hpp');
 const cors = require('cors');
 var userAgent = require('express-useragent');
@@ -69,12 +69,7 @@ app.use(xss());
 
 // Rate limiting
 // Make 100 requests in 10 mins
-const limiter = expressRateLimit({
-  windowMs: 15 * 60 * 1000, // 15 mins
-  max: 300,
-  message: 'Too many requests from this IP. Please try again in 30 minutes'
-});
-app.use(limiter);
+app.use(limitRequest);
 
 // Prevent http parameter pollution
 app.use(hpp());

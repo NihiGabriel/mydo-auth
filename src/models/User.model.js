@@ -159,7 +159,7 @@ UserSchema.methods.findByEmail= async (email) => {
     return await this.findOne({ email: email });
 };
 
-UserSchema.methods.getFuulName = async() => {
+UserSchema.methods.getFullName = async() => {
     return this.firstName + ' ' + this.lastName
 };
 

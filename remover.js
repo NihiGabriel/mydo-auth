@@ -13,7 +13,7 @@ const options = {
     useNewUrlParser: true,
     useCreateIndex: true,
     autoIndex: true,
-    keepAlive: true,
+    keepAlive: true,        
     poolSize: 10,
     bufferMaxEntries: 0,
     connectTimeoutMS: 10000,
@@ -24,16 +24,20 @@ const options = {
 }
 
 // connect to DB
-if (process.env.NODE_ENV === 'test') {
-    mongoose.connect(process.env.MONGODB_TEST_URI, options)
-}
-
-if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production' ) {
-    mongoose.connect(process.env.MONGODB_URI, options)
+const connectDB = async() => {
+    if (process.env.NODE_ENV === 'test') {
+        mongoose.connect(process.env.MONGODB_TEST_URI, options)
+    }
+    
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production' ) {
+        mongoose.connect(process.env.MONGODB_URI, options)
+    }
+    
 }
 
 const deleteData = async() => {
     try {
+        await connectDB()
         await Role.deleteMany();
         await User.deleteMany();
 

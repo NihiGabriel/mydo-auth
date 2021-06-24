@@ -5,6 +5,9 @@ const { asyncHandler, strIncludesEs6, strToArrayEs6 } = require('@nijisog/todo_c
 const Role = require('../models/Role.model');
 const User = require('../models/User.model');
 
+const nats = require('../events/nats');
+const UserCreated = require('../events/publishers/user-created');
+
 // @desc    Register User
 // @route   POST /api/identity/v1/auth/register
 // access   Public
@@ -53,6 +56,9 @@ exports.register = asyncHandler(async (req, res, next)=> {
             path: 'roles',
             select: '_id name'
         }]);
+
+        // publish new event to nats
+        await new UserCreated(nats.client).publish(u);
 
         res.status(200).json({
             error: false,
