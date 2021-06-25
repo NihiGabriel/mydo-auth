@@ -8,6 +8,8 @@ const User = require('../models/User.model');
 const nats = require('../events/nats');
 const UserCreated = require('../events/publishers/user-created');
 
+const { sendGrid } = require('../utils/email.util');
+
 // @desc    Register User
 // @route   POST /api/identity/v1/auth/register
 // access   Public
@@ -51,6 +53,22 @@ exports.register = asyncHandler(async (req, res, next)=> {
 
     if(update){
         // todo: send welcome and activation email
+
+        // welcome email
+        let emailData = {
+
+            template: 'welcome',
+            email: email,
+            preHeaderText: 'We are glad you signed up',
+            emailTitle: 'Welcome To Todo',
+            emailSalute: `Hi Champ`,
+            bodyOne: 'Welcome to todo. We are glad you signed up. please login to your dashboard using the button below',
+            buttonUrl: `${process.env.WEB_URL}/login`,
+            buttonText: 'Login To Dashboard',
+            fromName: 'Ope from Todo'
+        }
+
+        await sendGrid(emailData);
 
         const u = await User.findById(user._id).populate([{
             path: 'roles',
