@@ -2,6 +2,9 @@
   "name": "auth_srv",
   "version": "1.0.0",
   "description": "authentication service for todo",
+  "engines": {
+    "node": "15.x"
+  },
   "main": "server.js",
   "scripts": {
     "start": "NODE_ENV=production node src/server",
