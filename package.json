@@ -23,9 +23,9 @@
     ]
   },
   "author": "yemi",
-  "license": "MIT",
+  "license": "MIT", 
   "dependencies": {
-    "@nijisog/todo_common": "^1.0.22",
+    "@nijisog/todo_common": "^1.0.22",  
     "app-root-path": "^3.0.0",
     "aws-sdk": "^2.863.0",
     "axios": "^0.21.1",
