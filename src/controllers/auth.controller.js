@@ -71,7 +71,7 @@ exports.register = asyncHandler(async (req, res, next)=> {
         await sendGrid(emailData);
         
         // activation email
-        const activateToken = user.getActivationToken();
+            const activateToken = user.getActivationToken();
             await user.save({ validateBeforeSave: false });
 
             const activateUrl = callback +  '/' + activateToken;
@@ -81,7 +81,7 @@ exports.register = asyncHandler(async (req, res, next)=> {
             let activateData = {
                 template: 'welcome',
                 email: email,
-                preheaderText: 'Verify your account ownership',
+                preHeaderText: 'Verify your account ownership',
                 emailTitle: 'Activate your account',
                 emailSalute: `Hi Champ,`,
                 bodyOne:

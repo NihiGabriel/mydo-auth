@@ -184,6 +184,10 @@ exports.sendEmailVerification = asyncHandler(async (req, res, next) => {
 
         await sendGrid(emailData);
 
+        user.emailCode = mailCode;
+        user.emailCodeExpire = Date.now() * 1 * 60 * 1000 // 1 minute
+        await user.save();
+
         res.status(200).json({
             error: false,
             errors: [],
