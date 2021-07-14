@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
-const colors = require('colors')
+const colors = require('colors');
 
 const nats = require('../events/nats');
 
-const CountryFound = require('../events/listeners/country-found')
+const CountryFound = require('../events/listeners/country-found');
 
 const options = {
     useNewUrlParser: true,
@@ -26,7 +26,7 @@ const connectNats = async () => {
     }
 
     if(!process.env.NATS_URI){
-        throw new Error(`NATS_URI must be defined`);
+        throw new Error(`NATS_URI must be defined`); 
     }
 
     // connect to Nats

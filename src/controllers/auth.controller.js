@@ -8,14 +8,14 @@ const User = require('../models/User.model');
 
 const nats = require('../events/nats');
 const UserCreated = require('../events/publishers/user-created');
-
 const { sendGrid } = require('../utils/email.util');
+const { generate } = require('../utils/random.util');
 
 // @desc    Register User
 // @route   POST /api/identity/v1/auth/register
 // access   Public
 exports.register = asyncHandler(async (req, res, next)=> {
-    const { email, password, phoneNumber } = req.body;
+    const { email, password, phoneNumber, callback } = req.body;
 
     const role = await Role.findByName('user');
 
@@ -52,9 +52,8 @@ exports.register = asyncHandler(async (req, res, next)=> {
         runValidators: false
     });
 
-    if(update){
-        // todo: send welcome and activation email
-
+ if(update){     
+    try {
         // welcome email
         let emailData = {
 
@@ -70,10 +69,38 @@ exports.register = asyncHandler(async (req, res, next)=> {
         }
 
         await sendGrid(emailData);
+        
+        // activation email
+        const activateToken = user.getActivationToken();
+            await user.save({ validateBeforeSave: false });
 
-        const u = await User.findById(user._id).populate([{
-            path: 'roles',
-            select: '_id name'
+            const activateUrl = callback +  '/' + activateToken;
+            
+            // const activateUrl= `${process.env.WEB_URL}/activate/${activateToken}`
+
+            let activateData = {
+                template: 'welcome',
+                email: email,
+                preheaderText: 'Verify your account ownership',
+                emailTitle: 'Activate your account',
+                emailSalute: `Hi Champ,`,
+                bodyOne:
+                    'You just signed up on Todo. Activate your account for you to have access to more features on your account. Click the button below to verify your account',
+                buttonUrl: `${activateUrl}`,
+                buttonText: 'Activate Account',
+                fromName: 'Ope from Todo'
+            };
+        
+            await sendGrid(activateData);
+                
+            } catch (error) {
+                return next(new ErrorResponse('Error', 500, ['Email could not be sent']));
+
+            }
+	
+            const u = await User.findById(user._id).populate([{
+                path: 'roles',
+                select: '_id name'
         }]);
 
         // publish new event to nats
@@ -110,7 +137,7 @@ exports.login = asyncHandler(async (req, res, next) => {
     }
 
     // match password
-    const isMatch = user.matchPassword(password);
+    const isMatch = await user.matchPassword(password);
 
     if(!isMatch) {
         return next(new ErrorResponse('Invalid credentials', 401, ['Invalid credentials']));
@@ -120,6 +147,242 @@ exports.login = asyncHandler(async (req, res, next) => {
     sendTokenResponse(user, message, 200, res);
 });
 
+// @desc    Login User With Verification
+// @route   POST /api/identity/v1/auth/login-verify
+// access   Public
+exports.loginWithVerification = asyncHandler(async (req, res, next) => {
+    const { email, password, code } = req.body;
+
+    if(!email || !password){
+        return next(new ErrorResponse('Error!', 400, ['Email is required', 'Password is required']))
+    }
+
+    const user = await User.findOne({ email: email}).select('+password');
+
+    if(!user){
+        return next(new ErrorResponse('Invalid credentials', 401, ['Invalid credentials']))
+    }
+
+    const isMatched = await user.matchPassword(password);
+
+    if(!isMatched || (user && !isMatched)){
+        if(user.loginLimit < 3){
+            user.loginLimit = user.increaseLoginLimit();
+            await user.save();
+        }
+
+        if(user.loginLimit >= 3 && !user.checkLockedStatus()){ 
+            user.isLocked = true;
+            await user.save();
+
+            return next(new ErrorResponse('Forbidden!', 403, ['Account currently locked for 24 hours']));
+        }
+
+        if(user.loginLimit === 3 && user.checkLockedStatus()){
+            return next(new ErrorResponse('Forbidden!', 403, ['Account currently locked for 24 hours']));
+        }
+
+        return next(new ErrorResponse('Invalid credentials', 401, ['Invalid credentials']))
+    }
+    
+    if(!code){
+        const mailCode = await generate(6, false);
+
+        let emailData = {
+            template: 'email-verify',
+            email: email,
+            preHeaderText: 'Verify your email',
+            emailTitle: 'Email verification',
+            emailSalute: 'Hi Champ,',
+            bodyOne: 'Please verify your email using the code below',
+            bodyTwo: `${mailCode}`,
+            fromName: 'ToDo'
+        }
+
+        await sendGrid(emailData);
+
+        user.emailCode = mailCode;
+        user.emailCodeExpire = Date.now() + 1 * 60 * 1000 // 1 minute
+        await user.save();
+
+        res.status(206).json({
+            error: true,
+            errors: ['email verification is required'],
+            data: null,
+            message: 'email verification is required',
+            status: 206
+        })
+    }
+
+    if(code){
+        const codeMatched = await User.findOne({ emailCode: code, emailCodeExpire: {$gt: Date.now() }})
+
+        if(!codeMatched){
+            return next(new ErrorResponse('verification code expired', 400, ['Invalid verification code']))
+        }
+
+        const isMatched = user.matchPassword(password);
+
+        if(!isMatched){
+            if(user.loginLimit < 3){
+            user.loginLimit = user.increaseLoginLimit();
+            await user.save();
+        }
+    
+            if(user.loginLimit >= 3 && !user.checkLockedStatus()){
+                user.isLocked = true;
+                await user.save();
+    
+                return next(new ErrorResponse('Forbidden!', 403, ['Account currently locked for 24 hours']));
+            }
+    
+            return next(new ErrorResponse('Invalid credentials', 401, ['Invalid credentials']))
+        }
+
+        user.emailCode = undefined;
+        user.emailCodeExpire = undefined;
+        user.loginLimit = 0;
+        user.isLocked = false;
+
+        await user.save();
+
+        const message = 'Login successful';
+        sendTokenResponse(user, message, 200, res)
+    }
+})
+
+// @desc    Forgot Password
+// @route   POST /api/identity/v1/auth/forgot-password
+// access   Public
+exports.forgotPassword = asyncHandler(async (req, res, next) => {
+    const { email, callback } = req.body;
+
+    if (!email && !callback){
+        return next(new ErrorResponse('Error!', 400, ['email is required', 'callback is required']))
+    }
+
+    if(!email){
+        return next(new ErrorResponse('Error!', 400, ['email is required']))
+    }
+
+    if(!callback){
+        return next(new ErrorResponse('Error!', 400, ['callback is required']))
+
+    }
+    
+    const user = await User.findOne({email : email})
+
+    if(!user){
+        return next(new ErrorResponse('Error!', 404, ['Cannot find user']))
+    }
+
+    const resetToken = user.getResetPasswordToken();
+    await user.save({ validateBeforeSave: false })
+
+    try {
+       const resetUrl = callback + '/' + resetToken;
+       
+       let emailData = {
+
+          template: 'welcome',
+          email: user.email,
+          preHeaderText: 'Change your password',
+          emailTitle: 'Reset your password',
+          emailSalute: 'Hi Champ,',
+          bodyOne: 'You are receiving this email because you (or someone else) has requested a password reset. Click the button below to change your password or ignore this email if this wasn/t you',
+          buttonUrl: `${resetUrl}`,
+          buttonText: 'Change Password',
+          fromName: 'ToDo'
+       }
+
+       await sendGrid(emailData);
+       
+       res.status(200).json({
+           error: false,
+           errors: [],
+           data: null,
+           message: 'successful',
+           status: 200
+       })
+    } catch (err) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordTokenExpire = undefined;
+        
+        await user.save({ validateBeforeSave : false })
+
+        return next(new ErrorResponse('Error', 500 ['Could not send email, please try again'])); 
+    }
+})
+
+// @desc    Reset Password
+// @route   PUT /api/identity/v1/auth/reset-password/:resettoken
+// access   Public
+exports.resetPassword = asyncHandler(async (req, res, next) => {
+    const token = req.params.resettoken;
+    const { password } = req.body;
+
+    if(!password){
+        return next(new ErrorResponse('Error', 400, ['Password is required']))
+    }
+
+    const hashed = crypto
+    .createHash('sha256') 
+    .update(token)
+    .digest('hex')
+
+    const user = await User.findOne({ resetPasswordToken: hashed, resetPasswordTokenExpire: { $gt: Date.now() }});   
+
+    if(!user){ 
+        return next(new ErrorResponse('Error!', 404, ['Invalid token'])) 
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpire = undefined;
+    
+    await user.save();
+
+    res.status(200).json({
+        error: false,
+        errors: [],
+        data: null,
+        message: 'successful',
+        status: 200
+    })
+})
+
+// @desc    Activate Account
+// @route   PUT /api/identity/v1/auth/activate/:activatetoken
+// access   Public
+exports.activateAccount = asyncHandler(async (req, res, next) => {
+    const token = req.params.activatetoken
+
+    const hashedToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex')
+
+    const user = await User.findOne({ activationToken: hashedToken, activationTokenExpire: { $gt: Date.now() }});
+
+    if(!user){
+        return next(new ErrorResponse('Error!', 404, ['Invalid token']))
+    }
+
+    user.isActivated = true;
+    user.activationToken = undefined;
+    user.activationTokenExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+        error: false,
+        errors: [],
+        data: null,
+        message: 'successful',
+        status: 200
+    })
+})
+ 
 const sendTokenResponse = async (user, message, statusCode, res) => {
 
     const token = user.getSignedJwtToken()
@@ -131,17 +394,17 @@ const sendTokenResponse = async (user, message, statusCode, res) => {
 
        // make cookie work for https
        if(process.env.NODE_ENV === 'production'){
-        options.secure = true;
+        options.secure = true; 
     }
 
-    const u = await User.findById(user._id);
+    const u = await User.findById(user._id);  
 
     res.status(statusCode).cookie('token', token, options).json({ // 'token', the name of the cookie you want to save
         error: false,
         errors: [],
-        token: token,
-        data: u,
-        message: message,
+        token: token, 
+        data: u, 
+        message: message,   
         status: statusCode
     })
 

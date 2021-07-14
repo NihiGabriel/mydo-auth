@@ -62,12 +62,24 @@ const UserSchema = new mongoose.Schema(
         activationTokenExpire: Date,
         resetPasswordToken: String,
         resetPasswordTokenExpire: Date,
+        emailCode: String,
+        emailCodeExpire: Date,
+
+        loginLimit: {
+            type: Number,
+            default: 0
+        },
+
+        isLocked: {
+            type: Boolean,
+            default: false
+        },
 
         roles: [
-            {
-                type: mongoose.Schema.ObjectId,
+            {   
+                type: mongoose.Schema.ObjectId,  
                 ref: 'Role'
-            }
+            } 
         ],
 
         country:[ {
@@ -116,6 +128,17 @@ UserSchema.methods.matchPassword = async function (pass) { //compares password b
     return await bcrypt.compare(pass, this.password)
 }
 
+// // increasing login limit
+UserSchema.methods.increaseLoginLimit = function (code) {
+    const limit = this.loginLimit + 1
+    return limit;
+}
+
+// check locked status
+UserSchema.methods.checkLockedStatus = function () {
+    return this.isLocked;
+}
+
 // generate reset password token
 UserSchema.methods.getResetPasswordToken = function () {
 
@@ -125,7 +148,7 @@ UserSchema.methods.getResetPasswordToken = function () {
     this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex') // sha256 is an embedded algorithm in d crypto library
 
     // set the expiry time/date
-    this.getResetPasswordTokenExpire = Date.now() + 10 * 60 * 1000 // 10 minutes
+    this.resetPasswordTokenExpire = Date.now() + 10 * 60 * 1000 // 10 minutes
 
     return resetToken;
 }
@@ -163,4 +186,4 @@ UserSchema.methods.getFullName = async() => {
     return this.firstName + ' ' + this.lastName
 };
 
-module.exports = mongoose.model('user', UserSchema);
+module.exports = mongoose.model('User', UserSchema);

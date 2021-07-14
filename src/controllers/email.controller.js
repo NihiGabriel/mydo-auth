@@ -122,7 +122,7 @@ exports.sendForgotEmail = asyncHandler(async (req, res, next) => {
 
         const resetUrl =  `${process.env.WEB_URL}/reset-password/${resetToken}`;
         
-        let emailData = {
+        let emailData = { 
 
             template: 'welcome',
             email: email,

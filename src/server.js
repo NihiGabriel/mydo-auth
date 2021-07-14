@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5000;
 // create server
 const server = app.listen(
     PORT,
-    console.log(`Auth service running in ${process.env.NODE_ENV} mode on port ${PORT}`.yellow.bold)
+    console.log(`Auth service running in ${process.env.NODE_ENV} mode on port ${PORT}`.yellow.bold) 
 )
 
 // handle unhandle romise rejections

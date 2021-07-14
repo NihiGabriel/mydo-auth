@@ -40,7 +40,7 @@ app.use(express.urlencoded({limit: '10mb', extended: false }));
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// parse application/json
+// parse application/json 
 app.use(bodyParser.json());
 
 // parse various different custom JSON types as JSON
