@@ -136,7 +136,8 @@ exports.sendForgotEmail = asyncHandler(async (req, res, next) => {
         }
 
         await sendGrid(emailData);
-
+        
+        // send response
         res.status(200).json({
             error: false,
             errors: [],
