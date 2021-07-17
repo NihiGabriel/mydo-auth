@@ -140,7 +140,7 @@ exports.sendForgotEmail = asyncHandler(async (req, res, next) => {
         // send response
         res.status(200).json({
             error: false,
-            errors: [],
+            errors: [], 
             data: [],
             message: `Email sent to ${email} successfully`,
             status: 200
