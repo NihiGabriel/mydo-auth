@@ -385,7 +385,7 @@ exports.activateAccount = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/identity/v1/auth/user/:id
 // access   Private | superadmin, admin, user
 exports.getUser = asyncHandler(async (req, res, next) => {
-    const user = await User.findById(req.params.id)
+    const user = await User.findById(req.user.id)
 
     if(!user){
         return next(new ErrorResponse('Error!', 404, ['user does not exist']))
