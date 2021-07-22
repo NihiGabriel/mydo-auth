@@ -76,6 +76,8 @@ CountrySchema.set('toJSON', {getters: true, virtuals: true});
 
 CountrySchema.pre('save', function (next){
     this.slug = slugify(this.name, { lower: true });
+
+    next();
 })
 
 CountrySchema.statics.findByName = function (roleName) {

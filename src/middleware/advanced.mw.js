@@ -31,7 +31,7 @@ const advancedResults = (model, populate) => async (req, res, next) => {
 	// sort
 	if (req.query.sort) {
 		const sortBy = req.query.sort.split(',').join(' ');
-		query = query.sort(sortBy);
+		query = query.select(sortBy);
 	} else {
 		query = query.sort('-createdAt');
 	}

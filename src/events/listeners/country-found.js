@@ -48,4 +48,4 @@ class CountryFoundListener extends Listener {
     }
 }
 
-module.exports = CountryFoundListener
+module.exports = CountryFoundListener;

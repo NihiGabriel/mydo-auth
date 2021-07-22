@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const ErrorResponse = require('../utils/errorResponse.util');
-const { asyncHandler, strIncludesEs6, strToArrayEs6 } = require('@nijisog/todo_common');
+const { asyncHandler, strIncludesEs6, strToArrayEs6, strIncludes } = require('@nijisog/todo_common');
 
 // models
 const Role = require('../models/Role.model');
@@ -65,7 +65,7 @@ exports.register = asyncHandler(async (req, res, next)=> {
             bodyOne: 'Welcome to todo. We are glad you signed up. please login to your dashboard using the button below',
             buttonUrl: `${process.env.WEB_URL}/login`,
             buttonText: 'Login To Dashboard',
-            fromName: 'Ope from Todo'
+            fromName: 'Todo'
         }
 
         await sendGrid(emailData);
@@ -74,21 +74,18 @@ exports.register = asyncHandler(async (req, res, next)=> {
             const activateToken = user.getActivationToken();
             await user.save({ validateBeforeSave: false });
 
-            const activateUrl = callback +  '/' + activateToken;
+            const activateUrl =`${callback}/${activateToken}`;
             
-            // const activateUrl= `${process.env.WEB_URL}/activate/${activateToken}`
-
             let activateData = {
                 template: 'welcome',
                 email: email,
-                preHeaderText: 'Verify your account ownership',
+                preHeaderText: 'Account activation',
                 emailTitle: 'Activate your account',
                 emailSalute: `Hi Champ,`,
-                bodyOne:
-                    'You just signed up on Todo. Activate your account for you to have access to more features on your account. Click the button below to verify your account',
+                bodyOne:'we need to know you own this email, please click the button below to activate your account',
                 buttonUrl: `${activateUrl}`,
                 buttonText: 'Activate Account',
-                fromName: 'Ope from Todo'
+                fromName: 'Todo'
             };
         
             await sendGrid(activateData);
@@ -228,15 +225,16 @@ exports.loginWithVerification = asyncHandler(async (req, res, next) => {
             user.loginLimit = user.increaseLoginLimit();
             await user.save();
         }
-    
-            if(user.loginLimit >= 3 && !user.checkLockedStatus()){
-                user.isLocked = true;
-                await user.save();
-    
-                return next(new ErrorResponse('Forbidden!', 403, ['Account currently locked for 24 hours']));
-            }
-    
-            return next(new ErrorResponse('Invalid credentials', 401, ['Invalid credentials']))
+
+        if(user.loginLimit >= 3 && !user.checkLockedStatus()){
+            user.isLocked = true;
+            await user.save();
+
+            return next(new ErrorResponse('Forbidden!', 403, ['Account currently locked for 24 hours']));
+        }
+
+        return next(new ErrorResponse('Invalid credentials', 401, ['Invalid credentials']))
+
         }
 
         user.emailCode = undefined;
@@ -378,7 +376,137 @@ exports.activateAccount = asyncHandler(async (req, res, next) => {
         error: false,
         errors: [],
         data: null,
+        message: 'activation successful',
+        status: 200
+    })
+})
+
+// @desc    Get logged in user
+// @route   PUT /api/identity/v1/auth/user/:id
+// access   Private | superadmin, admin, user
+exports.getUser = asyncHandler(async (req, res, next) => {
+    const user = await User.findById(req.params.id)
+
+    if(!user){
+        return next(new ErrorResponse('Error!', 404, ['user does not exist']))
+    }
+
+    res.status(200).json({
+        error: false,
+        errors: [],
+        data: user,
         message: 'successful',
+        status: 200
+    })
+})
+
+// @desc    Attach role to a user
+// @route   PUT /api/identity/v1/auth/attach-role/:id
+// access   Private | Superadmin
+exports.attachRole = asyncHandler(async (req, res, next) => {
+    // find roles
+    let roleNames, roleIds = [];
+
+    const { roles } = req.body;
+
+    if(typeof(roles !== 'string')){
+        return next(new ErrorResponse('Error', 400, ['Expected roles to be a string separated by comma or spaces']))
+    }
+
+    const user = await User.findById(req.params.id);
+
+    if(!user){
+        return next(new ErrorResponse('Error!', 404, ['User does not exist']));
+    }
+
+    if(strIncludesEs6(roles, ',')){
+        roleNames = strToArrayEs6(roles, ',');
+    }else if(strIncludesEs6(roles, ' ')){
+        roleNames = strToArrayEs6(roles, ' ');
+    }else{
+        roleNames = [];
+        roleNames.push(roles);
+    }
+
+    // check if rolenames exist
+    for(let j = 0; j < roleNames.length; j++){
+        let role = await Role.findByName(roleNames[j]);
+
+        if(!role){
+            return next(new ErrorResponse('Cannot find role', 404, ['Role does not exist']))
+        }
+
+        roleIds.push(role._id);
+    }
+
+    // check if user already has the role
+    for(let m = 0; m < roleIds.length; m++){
+        if(!user.hasRole(roleIds[m], user.roles)){
+            continue; 
+        }else{
+            return next(new ErrorResponse('Error', 400, ['User is already attached to one of the roles specified']))
+        }
+    }
+
+    user.roles = user.roles.concat(roleIds);
+    await user.save();
+
+    res.status(200).json({
+        error: false,
+        errors: [],
+        data: null,
+        message: 'attached roles successfully',
+        status: 200
+    })
+})
+
+// @desc    Detach role from a user
+// @route   PUT /api/identity/v1/auth/detach-role/:id
+// access   Private | Superadmin
+exports.detachRole = asyncHandler(async (req, res, next) => {
+
+    let uRoles = [];
+    let flag = true;
+
+    const { roleName } = req.body;
+    if(!roleName || typeof(roleName) !== 'string'){
+        return next(new ErrorResponse('Error', 400, ['role is required and expected to be a string']))
+    }
+
+    const role = await Role.findByName(roleName);
+
+    if(!role){
+        return next(new ErrorResponse('Error', 404, ['Role does not exist']))
+    }
+
+    const user = await User.findById(req.params.id);
+    
+    if(!user){
+        return next(new ErrorResponse('Error', 404, ['User does not exist']))
+    }
+
+    for(let i = 0; i < user.roles.length; i++){
+        if(user.roles[i].toString() === role._id.toString()){
+            flag = true;
+            uRoles = user.roles.filter((r) => r.toString() !== role._id.toString())
+        }else{
+            flag = false;
+            continue;
+      }
+    }
+
+    if(!flag){
+        return next(new ErrorResponse('Error', 404, ['User does not have the role specified']))
+    }
+
+    user.roles = uRoles;
+    await user.save();
+
+    res.status(200).json({
+        error: false,
+        errors: [],
+        data: null,
+        message: 'Role detached successfully',
         status: 200
     })
 })
