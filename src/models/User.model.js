@@ -75,6 +75,11 @@ const UserSchema = new mongoose.Schema(
             default: false
         },
 
+        isUpdated: {
+            type: Boolean,
+            default: false
+        },
+
         roles: [
             {   
                 type: mongoose.Schema.ObjectId,  

@@ -18,11 +18,11 @@ const {
 
  router.post('/register', register);
  router.post('/login', login);
- router.post('/login-verify', loginWithVerification);
+ router.post('/login-verify', loginWithVerification); 
  router.post('/forgot-password', forgotPassword);
  router.put('/reset-password/:resettoken', resetPassword); 
  router.put('/activate/:activatetoken', activateAccount);
- router.put('/attach-role/:id', attachRole);
- router.get('/user/:id', protect, authorize(allRoles), getUser);
-
+ router.put('/attach-role/:id', attachRole); 
+ router.get('/user', protect, authorize(allRoles), getUser); 
+  
  module.exports = router;
