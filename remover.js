@@ -8,6 +8,7 @@ config();
 // load models
 const Role = require('./src/models/Role.model');
 const User = require('./src/models/User.model');
+const Country = require('./src/models/Country.model');
 
 const options = {
     useNewUrlParser: true,
@@ -40,6 +41,7 @@ const deleteData = async() => {
         await connectDB()
         await Role.deleteMany();
         await User.deleteMany();
+        await Country.deleteMany();
 
         console.log('data destroyed successfully...'.red.inverse);
         process.exit();

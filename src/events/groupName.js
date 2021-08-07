@@ -1,9 +1,9 @@
 const QueueGroupName = {
 
-    Resource: '_toddo-resource-service',
-    Meeting: '_toddo-meeting-service',
-    Subcription: '_toddo-sub-service',
-    Todo: '_toddo-todo-service'
+    Resource: 'sog.res-auth.service',
+    Meeting: 'sog.meeting-auth.service',
+    Subcription: 'sog.sub-auth.service',
+    Todo: 'sog.todo-auth.service'
 }
 
 module.exports = Object.freeze(QueueGroupName);

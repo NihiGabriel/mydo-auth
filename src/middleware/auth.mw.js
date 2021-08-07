@@ -33,8 +33,8 @@ exports.protect = asyncHandler(async (req, res, next) => { // protect here is to
         }
 
     } catch (err) { 
-        console.log(err);
-        return next(new ErrorResponse('Error', 401, ['user is not authorize to access this route'])); // it takes in 3params which is message, statusCode and array of erros
+            console.log(err);
+            return next(new ErrorResponse('Error', 401, ['user is not authorize to access this route'])); // it takes in 3params which is message, statusCode and array of erros
     }
 });
 

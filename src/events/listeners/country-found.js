@@ -22,7 +22,7 @@ class CountryFoundListener extends Listener {
 
         const user = await User.findOne({ _id: _id });
 
-        if(user){
+        if(user && !user.country){   
             
             const cData = await Country.create({
 

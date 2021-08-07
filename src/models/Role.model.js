@@ -7,9 +7,11 @@ const RoleSchema = new mongoose.Schema(
         name: {
             type: String
         },
+
         description: {
             types: String
         },
+        
         slug: {
             type: String
         },
@@ -17,7 +19,7 @@ const RoleSchema = new mongoose.Schema(
         users: [
             {
                 type: mongoose.Schema.ObjectId,
-                ref: 'Users'
+                ref: 'User'
             }
         ]
 

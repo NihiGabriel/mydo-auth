@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const slugify = require('slugify');
 const bcrypt = require('bcryptjs');
+
 const UserSchema = new mongoose.Schema(
     {
 
@@ -75,6 +77,10 @@ const UserSchema = new mongoose.Schema(
             default: false
         },
 
+        lockedTime: {
+            type: Date
+        },
+
         isUpdated: {
             type: Boolean,
             default: false
@@ -87,11 +93,14 @@ const UserSchema = new mongoose.Schema(
             } 
         ],
 
-        country:[ {
+        country:[ 
+            {
             type: mongoose.Schema.ObjectId,
             ref: 'Country'
         }
-    ]
+    ],
+
+        slug: String,
 
     },
 

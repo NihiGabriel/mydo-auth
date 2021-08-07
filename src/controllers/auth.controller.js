@@ -10,6 +10,8 @@ const nats = require('../events/nats');
 const UserCreated = require('../events/publishers/user-created');
 const { sendGrid } = require('../utils/email.util');
 const { generate } = require('../utils/random.util');
+const Worker = require('../jobs/worker');
+const userJob = require('../jobs/user.job');
 
 // @desc    Register User
 // @route   POST /api/identity/v1/auth/register
@@ -25,7 +27,7 @@ exports.register = asyncHandler(async (req, res, next)=> {
 
     // validate email
     const isExisting = await User.findOne({ email: email});
-
+ 
     if(isExisting){
         return next(new ErrorResponse('Email already exist', 400, ['Email already exist. Please use another email']));
     }
@@ -119,6 +121,9 @@ exports.register = asyncHandler(async (req, res, next)=> {
 // @route   POST /api/identity/v1/auth/login
 // access   Public
 exports.login = asyncHandler(async (req, res, next) => {
+
+    const worker = new Worker('* */24 * * *');
+
     const { email, password } = req.body;
 
     // validate email and password
@@ -134,15 +139,53 @@ exports.login = asyncHandler(async (req, res, next) => {
     }
 
     // match password
-    const isMatch = await user.matchPassword(password);
+    const isMatched = await user.matchPassword(password);
 
-    if(!isMatch) {
-        return next(new ErrorResponse('Invalid credentials', 401, ['Invalid credentials']));
+    if(!isMatched || (user && !isMatched)){
+
+        if(user.loginLimit < 3){
+
+            user.loginLimit = user.increaseLoginLimit();
+            await user.save();
+        }
+
+        if(user.loginLimit >= 3 && !user.checkLockedStatus()){
+            user.isLocked = true;
+            user.lockedTime = Date.now() + 1 * 60 * 1000; // 1 minute
+            await user.save(); 
+
+            await worker.schedule(() => {
+                userJob.unlockAccount(user);
+            })
+
+            return next(new ErrorResponse('Forbidden', 403, ['account currently locked for 24 hours']))
+        }
+
+        if(user.loginLimit === 3 && user.checkLockedStatus()){
+            
+            await worker.schedule(() => {
+                userJob.unlockAccount(user);
+            })
+
+            return next(new ErrorResponse('forbidden', 403, ['account currently locked for 24 hours']))
+
+        }
+
+        return next(new ErrorResponse('invalid credentials', 401, ['invalid credentials']))
     }
+
+        user.loginLimit = 0;
+        user.isLocked = false;
+        await user.save();
+
+        if(worker.task){
+            await worker.stop();
+        }
 
     const message = 'Login Successful'
     sendTokenResponse(user, message, 200, res);
 });
+
 
 // @desc    Login User With Verification
 // @route   POST /api/identity/v1/auth/login-verify
@@ -294,7 +337,7 @@ exports.forgotPassword = asyncHandler(async (req, res, next) => {
        }
 
        await sendGrid(emailData);
-       
+   
        res.status(200).json({
            error: false,
            errors: [],
@@ -382,7 +425,7 @@ exports.activateAccount = asyncHandler(async (req, res, next) => {
 })
 
 // @desc    Get logged in user
-// @route   PUT /api/identity/v1/auth/user/:id
+// @route   GET /api/identity/v1/auth/user/:id
 // access   Private | superadmin, admin, user
 exports.getUser = asyncHandler(async (req, res, next) => {
     const user = await User.findById(req.user.id)
@@ -418,7 +461,7 @@ exports.attachRole = asyncHandler(async (req, res, next) => {
     if(!user){
         return next(new ErrorResponse('Error!', 404, ['User does not exist']));
     }
-
+    
     if(strIncludesEs6(roles, ',')){
         roleNames = strToArrayEs6(roles, ',');
     }else if(strIncludesEs6(roles, ' ')){

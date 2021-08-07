@@ -14,7 +14,7 @@ exports.seedUsers = async () => {
         const u = await User.find({});
 
         if (u && u.length > 0) return;
-
+ 
         const seed = await User.create(users);
 
         if (seed) {
