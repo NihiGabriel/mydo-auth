@@ -4,6 +4,12 @@ const colors = require('colors');
 const nats = require('../events/nats');
 
 const CountryFound = require('../events/listeners/country-found');
+const ItemAbandoned = require('../events/listeners/item-abandoned');
+const ItemCompleted = require('../events/listeners/item-completed');
+const ItemNudged = require('../events/listeners/item-nudged');
+const ReminderCompleted = require('../events/listeners/reminder-completed');
+const ReminderSend = require('../events/listeners/reminder-send');
+const TodoCompleted = require('../events/listeners/todo-completed');
 
 const options = {
     useNewUrlParser: true,
@@ -45,6 +51,12 @@ const listenNats = async () => {
 
     // connect to nats
     await new CountryFound(nats.client).listen();
+    await new ItemAbandoned(nats.client).listen();
+    await new ItemCompleted(nats.client).listen();
+    await new ItemNudged(nats.client).listen();
+    await new ReminderCompleted(nats.client).listen();
+    await new ReminderSend(nats.client).listen();
+    await new TodoCompleted(nats.client).listen();
 }
 
 const connectDB = async () => {

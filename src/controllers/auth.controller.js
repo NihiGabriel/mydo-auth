@@ -5,6 +5,7 @@ const { asyncHandler, strIncludesEs6, strToArrayEs6, strIncludes } = require('@n
 // models
 const Role = require('../models/Role.model');
 const User = require('../models/User.model');
+const Notification = require('../models/Notification.model');
 
 const nats = require('../events/nats');
 const UserCreated = require('../events/publishers/user-created');
@@ -17,7 +18,7 @@ const userJob = require('../jobs/user.job');
 // @route   POST /api/identity/v1/auth/register
 // access   Public
 exports.register = asyncHandler(async (req, res, next)=> {
-    const { email, password, phoneNumber, callback } = req.body;
+    const { email, password, phoneNumber, phoneCode, callback } = req.body;
 
     const role = await Role.findByName('user');
 
@@ -36,11 +37,20 @@ exports.register = asyncHandler(async (req, res, next)=> {
         return next(new ErrorResponse('Phone number is required', 400, ['Phone number is required']));
     }
 
+    if(!phoneCode){ 
+        return next(new ErrorResponse('Error!', 400, ['Phone code is required']));
+    }
+
+    if(!strIncludesEs6(phoneCode, '+')){
+        return next(new ErrorResponse('Error!', 400, ['Phone code must include \'+\' ']));
+    }
+
     // create user
     const user = await User.create({ 
         email: email,
         password: password,
         phoneNumber: phoneNumber,
+        phoneCode: phoneCode,
         isAdmin: false,
         isActive: true,
         superUser: false,
@@ -109,9 +119,25 @@ exports.register = asyncHandler(async (req, res, next)=> {
             error: false,
             errors: [],
             data: u,
-            message: 'Successful',
+            message: 'successful',
             status: 200
         })
+
+           // create notification
+           const notiRef = await generate(8, false);
+           const superadmin = await User.findOne({ email: 'superadmin@gmail.com'})
+           await Notification.create({
+               
+               refId: notiRef,
+               body: `A new user ${user.email} just registered`,
+               status: 'new',
+               sender: {
+                   name: 'Todo',
+                   id: superadmin._id
+               },
+               recipients: [`${superadmin._id}`]
+           })
+   
     } else {
         return next(new ErrorResponse('Error', 500, ['Could not fetch role to user']));
     }

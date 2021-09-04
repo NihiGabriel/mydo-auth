@@ -6,7 +6,7 @@ const {
     sendEmailVerification   
  } = require('../../../controllers/email.controller')
 
- const router = express.Router();
+ const router = express.Router({ mergeParams: true });
 
  router.post('/send-welcome', sendWelcomeEmail);
  router.post('/send-activation', sendActivationEmail);

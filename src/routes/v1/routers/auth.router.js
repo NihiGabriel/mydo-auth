@@ -10,7 +10,7 @@ const {
     getUser
  } = require('../../../controllers/auth.controller')
 
- const router = express.Router();
+ const router = express.Router({ mergeParams: true });
  const { protect, authorize} = require('../../../middleware/auth.mw');
 
  const roles = ["superadmin", "admin"];
