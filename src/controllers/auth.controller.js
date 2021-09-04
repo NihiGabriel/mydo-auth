@@ -2,7 +2,6 @@ const crypto = require('crypto');
 const ErrorResponse = require('../utils/errorResponse.util');
 const { asyncHandler, strIncludesEs6, strToArrayEs6, strIncludes } = require('@nijisog/todo_common');
 
-// models
 const Role = require('../models/Role.model');
 const User = require('../models/User.model');
 const Notification = require('../models/Notification.model');
