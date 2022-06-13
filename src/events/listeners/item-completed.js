@@ -19,8 +19,8 @@ class ItemCompletedListener extends Listener{
         const ref = await generate(8, false);
         const superadmin = await User.findOne({ email: 'superadmin@gmail.com' });
 
-        const item = data;
-        const user = await User.findById(item.todo.user);
+        const {item, todo} = data;
+        const user = await User.findById(todo.user);
 
         const notif = await Notification.create({
             refId: ref,

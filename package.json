@@ -22,7 +22,7 @@
       "./tests/jest.js"
     ]
   },
-  "author": "yemi",
+  "author": "Nihi",
   "license": "MIT",
   "dependencies": {
     "@nijisog/todo_common": "^1.0.30",

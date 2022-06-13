@@ -93,12 +93,10 @@ const UserSchema = new mongoose.Schema(
             } 
         ],
 
-        country:[ 
-            {
+        country:{
             type: mongoose.Schema.ObjectId,
             ref: 'Country'
-        }
-    ],
+        },
 
         slug: String,
 
@@ -143,7 +141,7 @@ UserSchema.methods.matchPassword = async function (pass) { //compares password b
 }
 
 // // increasing login limit
-UserSchema.methods.increaseLoginLimit = function (code) {
+UserSchema.methods.increaseLoginLimit = function () {
     const limit = this.loginLimit + 1
     return limit;
 }
@@ -167,6 +165,7 @@ UserSchema.methods.getResetPasswordToken = function () {
     return resetToken;
 }
 
+// generate activation token fro users
 UserSchema.methods.getActivationToken = function () {
     const activateToken = crypto.randomBytes(20).toString('hex')
 
@@ -192,7 +191,7 @@ UserSchema.methods.hasRole = (role, roles) => {
     return flag;
   };
 
-UserSchema.methods.findByEmail= async (email) => {
+UserSchema.methods.findByEmail = async (email) => {
     return await this.findOne({ email: email });
 };
 

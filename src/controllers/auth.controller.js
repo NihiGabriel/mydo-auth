@@ -178,7 +178,7 @@ exports.login = asyncHandler(async (req, res, next) => {
         if(user.loginLimit >= 3 && !user.checkLockedStatus()){
             user.isLocked = true;
             user.lockedTime = Date.now() + 1 * 60 * 1000; // 1 minute
-            await user.save(); 
+            await user.save();
 
             await worker.schedule(() => {
                 userJob.unlockAccount(user);
@@ -268,7 +268,7 @@ exports.loginWithVerification = asyncHandler(async (req, res, next) => {
         await sendGrid(emailData);
 
         user.emailCode = mailCode;
-        user.emailCodeExpire = Date.now() + 1 * 60 * 1000 // 1 minute
+        user.emailCodeExpire = Date.now() + 5 * 60 * 1000 // 1 minute
         await user.save();
 
         res.status(206).json({
